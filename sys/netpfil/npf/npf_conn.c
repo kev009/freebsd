@@ -110,6 +110,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conn.c,v 1.16 2015/02/05 22:04:03 rmind Exp $");
 #include <sys/condvar.h>
 #include <sys/kmem.h>
 #include <sys/kthread.h>
+#include <sys/lock.h>
 #include <sys/mutex.h>
 #include <net/pfil.h>
 #include <sys/pool.h>

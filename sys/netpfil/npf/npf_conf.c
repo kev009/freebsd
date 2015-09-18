@@ -55,6 +55,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conf.c,v 1.9 2014/11/30 01:37:53 rmind Exp $");
 
 #include <sys/kmem.h>
 #include <sys/pserialize.h>
+#include <sys/lock.h>
 #include <sys/mutex.h>
 
 #include "npf_impl.h"

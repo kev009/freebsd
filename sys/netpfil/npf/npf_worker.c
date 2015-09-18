@@ -35,6 +35,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_worker.c,v 1.1 2013/06/02 02:20:04 rmind Exp $")
 #include <sys/param.h>
 #include <sys/types.h>
 
+#include <sys/lock.h>
 #include <sys/mutex.h>
 #include <sys/kernel.h>
 #include <sys/kthread.h>

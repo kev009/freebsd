@@ -39,6 +39,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_state.c,v 1.17 2014/07/20 00:37:41 rmind Exp $")
 #include <sys/param.h>
 #include <sys/systm.h>
 
+#include <sys/lock.h>
 #include <sys/mutex.h>
 
 #include "npf_impl.h"

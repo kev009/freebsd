@@ -79,6 +79,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_nat.c,v 1.39 2014/12/30 19:11:44 christos Exp $"
 #include <sys/bitops.h>
 #include <sys/condvar.h>
 #include <sys/kmem.h>
+#include <sys/lock.h>
 #include <sys/mutex.h>
 #include <sys/pool.h>
 #include <sys/proc.h>

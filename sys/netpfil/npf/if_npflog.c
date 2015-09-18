@@ -42,6 +42,7 @@ __KERNEL_RCSID(0, "$NetBSD: if_npflog.c,v 1.3 2013/03/13 13:15:47 christos Exp $
 #include <sys/conf.h>
 #include <sys/kmem.h>
 #include <sys/mbuf.h>
+#include <sys/lock.h>
 #include <sys/mutex.h>
 #include <sys/queue.h>
 #include <sys/sockio.h>

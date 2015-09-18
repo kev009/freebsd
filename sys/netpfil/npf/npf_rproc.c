@@ -40,6 +40,7 @@ __KERNEL_RCSID(0, "$NetBSD");
 #include <sys/types.h>
 
 #include <sys/kmem.h>
+#include <sys/lock.h>
 #include <sys/mutex.h>
 #include <sys/module.h>
 #include <sys/refcount.h>

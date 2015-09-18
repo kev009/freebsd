@@ -42,6 +42,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_ext_log.c,v 1.8 2014/07/20 00:37:41 rmind Exp $"
 #include <sys/conf.h>
 #include <sys/kmem.h>
 #include <sys/mbuf.h>
+#include <sys/lock.h>
 #include <sys/mutex.h>
 #include <sys/queue.h>
 

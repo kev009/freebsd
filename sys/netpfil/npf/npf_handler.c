@@ -42,6 +42,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_handler.c,v 1.33 2014/07/23 01:25:34 rmind Exp $
 #include <sys/param.h>
 
 #include <sys/mbuf.h>
+#include <sys/lock.h>
 #include <sys/mutex.h>
 #include <net/if.h>
 #include <net/pfil.h>
