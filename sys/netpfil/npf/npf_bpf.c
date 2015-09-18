@@ -39,7 +39,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_bpf.c,v 1.11 2014/07/20 00:37:41 rmind Exp $");
 #include <sys/types.h>
 #include <sys/param.h>
 
-#include <sys/bitops.h>
 #include <sys/mbuf.h>
 #include <net/bpf.h>
 
