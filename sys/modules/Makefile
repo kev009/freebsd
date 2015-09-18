@@ -261,6 +261,7 @@ SUBDIR=	\
 	nfssvc \
 	nge \
 	nmdm \
+	${_npf} \
 	${_nsp} \
 	nullfs \
 	${_ntb} \
@@ -448,6 +449,10 @@ _nandsim=	nandsim
 
 .if ${MK_NETGRAPH} != "no" || defined(ALL_MODULES)
 _netgraph=	netgraph
+.endif
+
+.if ${MK_NPF} != "no" || defined(ALL_MODULES)
+_npf=		npf
 .endif
 
 .if (${MK_PF} != "no" && (${MK_INET_SUPPORT} != "no" || \

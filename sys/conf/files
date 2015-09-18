@@ -3760,6 +3760,26 @@ netpfil/ipfw/ip_fw_table_algo.c	optional inet ipfirewall
 netpfil/ipfw/ip_fw_table_value.c	optional inet ipfirewall
 netpfil/ipfw/ip_fw_iface.c	optional inet ipfirewall
 netpfil/ipfw/ip_fw_nat.c	optional inet ipfirewall_nat
+netpfil/npf/npf.c		optional npf inet
+netpfil/npf/npf_conf.c		optional npf inet
+netpfil/npf/npf_ctl.c		optional npf inet
+netpfil/npf/npf_handler.c	optional npf inet
+netpfil/npf/npf_mbuf.c		optional npf inet
+netpfil/npf/npf_bpf.c		optional npf inet
+netpfil/npf/npf_ruleset.c	optional npf inet
+netpfil/npf/npf_rproc.c		optional npf inet
+netpfil/npf/npf_tableset.c	optional npf inet
+netpfil/npf/npf_tableset_ptree.c	optional npf inet
+netpfil/npf/npf_if.c		optional npf inet
+netpfil/npf/npf_inet.c		optional npf inet
+netpfil/npf/npf_conn.c		optional npf inet
+netpfil/npf/npf_conndb.c	optional npf inet
+netpfil/npf/npf_state.c		optional npf inet
+netpfil/npf/npf_state_tcp.c	optional npf inet
+netpfil/npf/npf_nat.c		optional npf inet
+netpfil/npf/npf_alg.c		optional npf inet
+netpfil/npf/npf_sendpkt.c	optional npf inet
+netpfil/npf/npf_worker.c	optional npf inet
 netpfil/pf/if_pflog.c		optional pflog pf inet
 netpfil/pf/if_pfsync.c		optional pfsync pf inet
 netpfil/pf/pf.c			optional pf inet
