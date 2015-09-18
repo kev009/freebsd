@@ -39,7 +39,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conndb.c,v 1.2 2014/07/23 01:25:34 rmind Exp $")
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/cprng.h>
 #include <sys/hash.h>
 #include <sys/kmem.h>
 #include <sys/refcount.h>
@@ -118,7 +117,7 @@ npf_conndb_create(void)
 		rw_init(&hb->hb_lock);
 		hb->hb_count = 0;
 	}
-	cd->cd_seed = cprng_fast32();
+	cd->cd_seed = arc4random();
 	return cd;
 }
 

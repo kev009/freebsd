@@ -83,7 +83,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_nat.c,v 1.39 2014/12/30 19:11:44 christos Exp $"
 #include <sys/pool.h>
 #include <sys/proc.h>
 #include <sys/refcount.h>
-#include <sys/cprng.h>
 
 #include <net/pfil.h>
 #include <netinet/in.h>
@@ -424,7 +423,7 @@ npf_nat_getport(npf_natpolicy_t *np)
 	KASSERT((np->n_flags & NPF_NAT_PORTMAP) != 0);
 	KASSERT(pm->p_refcnt > 0);
 
-	idx = cprng_fast32() % PORTMAP_SIZE;
+	idx = arc4random() % PORTMAP_SIZE;
 	for (;;) {
 		KASSERT(idx < PORTMAP_SIZE);
 		map = pm->p_bitmap[idx];

@@ -35,7 +35,6 @@
 __KERNEL_RCSID(0, "$NetBSD: npf_ext_rndblock.c,v 1.5 2014/07/20 00:37:41 rmind Exp $");
 
 #include <sys/types.h>
-#include <sys/cprng.h>
 #include <sys/atomic.h>
 #include <sys/module.h>
 #include <sys/kmem.h>
@@ -124,7 +123,7 @@ npf_ext_rndblock(npf_cache_t *npc, void *meta, int *decision)
 	}
 
 	if (rndblock->percentage) {
-		uint32_t w = cprng_fast32() % PERCENTAGE_BASE;
+		uint32_t w = arc4random() % PERCENTAGE_BASE;
 		if (w <= rndblock->percentage) {
 			*decision = NPF_DECISION_BLOCK;
 		}
