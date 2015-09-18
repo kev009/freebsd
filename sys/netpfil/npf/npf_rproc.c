@@ -39,10 +39,10 @@ __KERNEL_RCSID(0, "$NetBSD");
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/atomic.h>
 #include <sys/kmem.h>
 #include <sys/mutex.h>
 #include <sys/module.h>
+#include <sys/refcount.h>
 
 #include "npf_impl.h"
 
@@ -190,7 +190,7 @@ npf_ext_construct(const char *name, npf_rproc_t *rp, prop_dictionary_t params)
 	mutex_enter(&ext_lock);
 	ext = npf_ext_lookup(name, true);
 	if (ext) {
-		atomic_inc_uint(&ext->ext_refcnt);
+		refcount_acquire(&ext->ext_refcnt);
 	}
 	mutex_exit(&ext_lock);
 
@@ -203,7 +203,7 @@ npf_ext_construct(const char *name, npf_rproc_t *rp, prop_dictionary_t params)
 
 	error = extops->ctor(rp, params);
 	if (error) {
-		atomic_dec_uint(&ext->ext_refcnt);
+		refcount_release(&ext->ext_refcnt);
 		return error;
 	}
 	i = rp->rp_ext_count++;
@@ -292,7 +292,7 @@ npf_rproc_create(prop_dictionary_t rpdict)
 	}
 
 	rp = kmem_intr_zalloc(sizeof(npf_rproc_t), KM_SLEEP);
-	rp->rp_refcnt = 1;
+	refcount_init(&rp->rp_refcnt, 1);
 
 	strlcpy(rp->rp_name, name, RPROC_NAME_LEN);
 	prop_dictionary_get_uint32(rpdict, "flags", &rp->rp_flags);
@@ -305,7 +305,7 @@ npf_rproc_create(prop_dictionary_t rpdict)
 void
 npf_rproc_acquire(npf_rproc_t *rp)
 {
-	atomic_inc_uint(&rp->rp_refcnt);
+	refcount_acquire(&rp->rp_refcnt);
 }
 
 /*
@@ -317,7 +317,7 @@ npf_rproc_release(npf_rproc_t *rp)
 {
 
 	KASSERT(rp->rp_refcnt > 0);
-	if (atomic_dec_uint_nv(&rp->rp_refcnt) != 0) {
+	if (refcount_release(&rp->rp_refcnt) != 0) {
 		return;
 	}
 	/* XXXintr */
@@ -326,7 +326,7 @@ npf_rproc_release(npf_rproc_t *rp)
 		const npf_ext_ops_t *extops = ext->ext_ops;
 
 		extops->dtor(rp, rp->rp_ext_meta[i]);
-		atomic_dec_uint(&ext->ext_refcnt);
+		refcount_release(&ext->ext_refcnt);
 	}
 	kmem_intr_free(rp, sizeof(npf_rproc_t));
 }

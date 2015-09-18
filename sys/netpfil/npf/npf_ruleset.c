@@ -39,7 +39,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_ruleset.c,v 1.42 2015/03/20 23:36:28 rmind Exp $
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/atomic.h>
 #include <sys/kmem.h>
 #include <sys/queue.h>
 #include <sys/mbuf.h>

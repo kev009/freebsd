@@ -39,7 +39,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf.c,v 1.23 2015/08/20 14:40:19 christos Exp $");
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/atomic.h>
 #include <sys/conf.h>
 #include <sys/kauth.h>
 #include <sys/kmem.h>

@@ -76,13 +76,13 @@ __KERNEL_RCSID(0, "$NetBSD: npf_nat.c,v 1.39 2014/12/30 19:11:44 christos Exp $"
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/atomic.h>
 #include <sys/bitops.h>
 #include <sys/condvar.h>
 #include <sys/kmem.h>
 #include <sys/mutex.h>
 #include <sys/pool.h>
 #include <sys/proc.h>
+#include <sys/refcount.h>
 #include <sys/cprng.h>
 
 #include <net/pfil.h>
@@ -247,7 +247,7 @@ npf_nat_newpolicy(prop_dictionary_t natdict, npf_ruleset_t *rset)
 	if (!npf_ruleset_sharepm(rset, np)) {
 		/* Allocate a new port map for the NAT policy. */
 		pm = kmem_zalloc(PORTMAP_MEM_SIZE, KM_SLEEP);
-		pm->p_refcnt = 1;
+		refcount_init(&pm->p_refcnt, 1);
 		KASSERT((uintptr_t)pm->p_bitmap == (uintptr_t)pm + sizeof(*pm));
 		np->n_portmap = pm;
 	} else {
@@ -318,7 +318,7 @@ npf_nat_freepolicy(npf_natpolicy_t *np)
 	KASSERT(pm == NULL || pm->p_refcnt > 0);
 
 	/* Destroy the port map, on last reference. */
-	if (pm && atomic_dec_uint_nv(&pm->p_refcnt) == 0) {
+	if (pm && refcount_release(&pm->p_refcnt) == 0) {
 		KASSERT((np->n_flags & NPF_NAT_PORTMAP) != 0);
 		kmem_free(pm, PORTMAP_MEM_SIZE);
 	}
@@ -385,13 +385,13 @@ npf_nat_sharepm(npf_natpolicy_t *np, npf_natpolicy_t *mnp)
 	 * If NAT policy has an old port map - drop the reference
 	 * and destroy the port map if it was the last.
 	 */
-	if (mpm && atomic_dec_uint_nv(&mpm->p_refcnt) == 0) {
+	if (mpm && refcount_release(&mpm->p_refcnt) == 0) {
 		kmem_free(mpm, PORTMAP_MEM_SIZE);
 	}
 
 	/* Share the port map. */
 	pm = np->n_portmap;
-	atomic_inc_uint(&pm->p_refcnt);
+	refcount_acquire(&pm->p_refcnt);
 	mnp->n_portmap = pm;
 	return true;
 }
@@ -539,7 +539,7 @@ npf_nat_inspect(npf_cache_t *npc, const int di)
 		return NULL;
 	}
 	np = npf_rule_getnat(rl);
-	atomic_inc_uint(&np->n_refcnt);
+	refcount_acquire(&np->n_refcnt);
 	npf_config_read_exit(slock);
 	return np;
 }
@@ -721,7 +721,7 @@ npf_do_nat(npf_cache_t *npc, npf_conn_t *con, const int di)
 			npf_recache(npc);
 		}
 		error = npf_nat_algo(npc, np, forw);
-		atomic_dec_uint(&np->n_refcnt);
+		refcount_release(&np->n_refcnt);
 		return error;
 	}
 
@@ -734,7 +734,7 @@ npf_do_nat(npf_cache_t *npc, npf_conn_t *con, const int di)
 	if (con == NULL) {
 		ncon = npf_conn_establish(npc, di, true);
 		if (ncon == NULL) {
-			atomic_dec_uint(&np->n_refcnt);
+			refcount_release(&np->n_refcnt);
 			return ENOMEM;
 		}
 		con = ncon;
@@ -746,7 +746,7 @@ npf_do_nat(npf_cache_t *npc, npf_conn_t *con, const int di)
 	 */
 	nt = npf_nat_create(npc, np, con);
 	if (nt == NULL) {
-		atomic_dec_uint(&np->n_refcnt);
+		refcount_release(&np->n_refcnt);
 		error = ENOMEM;
 		goto out;
 	}
@@ -831,7 +831,7 @@ npf_nat_destroy(npf_nat_t *nt)
 	mutex_enter(&np->n_lock);
 	LIST_REMOVE(nt, nt_entry);
 	KASSERT(np->n_refcnt > 0);
-	atomic_dec_uint(&np->n_refcnt);
+	refcount_release(&np->n_refcnt);
 	mutex_exit(&np->n_lock);
 
 	pool_cache_put(nat_cache, nt);
@@ -900,7 +900,7 @@ npf_nat_import(prop_dictionary_t natdict, npf_ruleset_t *natlist,
 	 */
 	nt->nt_natpolicy = np;
 	nt->nt_conn = con;
-	np->n_refcnt++;
+	refcount_acquire(&np->n_refcnt++);
 	LIST_INSERT_HEAD(&np->n_nat_list, nt, nt_entry);
 	return nt;
 }

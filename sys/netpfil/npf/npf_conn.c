@@ -107,7 +107,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conn.c,v 1.16 2015/02/05 22:04:03 rmind Exp $");
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-#include <sys/atomic.h>
 #include <sys/condvar.h>
 #include <sys/kmem.h>
 #include <sys/kthread.h>
@@ -115,6 +114,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conn.c,v 1.16 2015/02/05 22:04:03 rmind Exp $");
 #include <net/pfil.h>
 #include <sys/pool.h>
 #include <sys/queue.h>
+#include <sys/refcount.h>
 #include <sys/systm.h>
 
 #define __NPF_CONN_PRIVATE
@@ -370,7 +370,7 @@ npf_conn_lookup(const npf_cache_t *npc, const int di, bool *forw)
 	flags = con->c_flags;
 	ok = (flags & (CONN_ACTIVE | CONN_EXPIRE)) == CONN_ACTIVE;
 	if (__predict_false(!ok)) {
-		atomic_dec_uint(&con->c_refcnt);
+		refcount_release(&con->c_refcnt);
 		return NULL;
 	}
 
@@ -380,12 +380,12 @@ npf_conn_lookup(const npf_cache_t *npc, const int di, bool *forw)
 	 */
 	cifid = con->c_ifid;
 	if (__predict_false(cifid && cifid != nbuf->nb_ifid)) {
-		atomic_dec_uint(&con->c_refcnt);
+		refcount_release(&con->c_refcnt);
 		return NULL;
 	}
 	pforw = (flags & PFIL_ALL) == di;
 	if (__predict_false(*forw != pforw)) {
-		atomic_dec_uint(&con->c_refcnt);
+		refcount_release(&con->c_refcnt);
 		return NULL;
 	}
 
@@ -470,7 +470,7 @@ npf_conn_establish(npf_cache_t *npc, int di, bool per_if)
 
 	mutex_init(&con->c_lock, MUTEX_DEFAULT, IPL_SOFTNET);
 	con->c_flags = (di & PFIL_ALL);
-	con->c_refcnt = 0;
+	refcount_init(&con->c_refcnt, 0);
 	con->c_rproc = NULL;
 	con->c_nat = NULL;
 
@@ -502,7 +502,7 @@ npf_conn_establish(npf_cache_t *npc, int di, bool per_if)
 	 * a reference for the caller before we make it visible.
 	 */
 	getnanouptime(&con->c_atime);
-	con->c_refcnt = 1;
+	refcount_acquire(&con->c_refcnt);
 
 	/*
 	 * Insert both keys (entries representing directions) of the
@@ -529,7 +529,7 @@ err:
 	 */
 	if (error) {
 		atomic_or_uint(&con->c_flags, CONN_REMOVED | CONN_EXPIRE);
-		atomic_dec_uint(&con->c_refcnt);
+		refcount_release(&con->c_refcnt);
 		npf_stats_inc(NPF_STAT_RACE_CONN);
 	} else {
 		NPF_PRINTF(("NPF: establish conn %p\n", con));
@@ -702,7 +702,7 @@ npf_conn_release(npf_conn_t *con)
 		atomic_or_uint(&con->c_flags, CONN_ACTIVE);
 	}
 	KASSERT(con->c_refcnt > 0);
-	atomic_dec_uint(&con->c_refcnt);
+	refcount_release(&con->c_refcnt);
 }
 
 /*

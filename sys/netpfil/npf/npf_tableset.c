@@ -46,13 +46,13 @@ __KERNEL_RCSID(0, "$NetBSD: npf_tableset.c,v 1.22 2014/08/11 01:54:12 rmind Exp 
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/atomic.h>
 #include <sys/hash.h>
 #include <sys/cdbr.h>
 #include <sys/kmem.h>
 #include <sys/malloc.h>
 #include <sys/pool.h>
 #include <sys/queue.h>
+#include <sys/refcount.h>
 #include <sys/rwlock.h>
 #include <sys/systm.h>
 #include <sys/types.h>
@@ -150,7 +150,7 @@ npf_tableset_destroy(npf_tableset_t *ts)
 	for (u_int tid = 0; tid < ts->ts_nitems; tid++) {
 		npf_table_t *t = ts->ts_map[tid];
 
-		if (t && atomic_dec_uint_nv(&t->t_refcnt) == 0) {
+		if (t && refcount_release(&t->t_refcnt) == 0) {
 			npf_table_destroy(t);
 		}
 	}
@@ -171,7 +171,7 @@ npf_tableset_insert(npf_tableset_t *ts, npf_table_t *t)
 	KASSERT((u_int)tid < ts->ts_nitems);
 
 	if (ts->ts_map[tid] == NULL) {
-		atomic_inc_uint(&t->t_refcnt);
+		refcount_acquire(&t->t_refcnt);
 		ts->ts_map[tid] = t;
 		error = 0;
 	} else {
@@ -244,14 +244,14 @@ npf_tableset_reload(npf_tableset_t *nts, npf_tableset_t *ots)
 		 * Preserve the current table.  Acquire a reference since
 		 * we are keeping it in the old table set.  Update its ID.
 		 */
-		atomic_inc_uint(&ot->t_refcnt);
+		refcount_acquire(&ot->t_refcnt);
 		nts->ts_map[tid] = ot;
 
 		KASSERT(npf_config_locked_p());
 		ot->t_id = tid;
 
 		/* Destroy the new table (we hold the only reference). */
-		t->t_refcnt--;
+		refcount_release(t->t_refcnt);
 		npf_table_destroy(t);
 	}
 }

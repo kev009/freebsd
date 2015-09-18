@@ -39,10 +39,10 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conndb.c,v 1.2 2014/07/23 01:25:34 rmind Exp $")
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/atomic.h>
 #include <sys/cprng.h>
 #include <sys/hash.h>
 #include <sys/kmem.h>
+#include <sys/refcount.h>
 
 #define __NPF_CONN_PRIVATE
 #include "npf_conn.h"
@@ -168,7 +168,7 @@ npf_conndb_lookup(npf_conndb_t *cd, const npf_connkey_t *key, bool *forw)
 	*forw = (foundkey == &con->c_forw_entry);
 
 	/* Acquire the reference and return the connection. */
-	atomic_inc_uint(&con->c_refcnt);
+	refcount_acquire(&con->c_refcnt);
 	rw_exit(&hb->hb_lock);
 	return con;
 }
