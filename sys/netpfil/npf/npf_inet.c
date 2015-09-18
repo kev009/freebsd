@@ -46,7 +46,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_inet.c,v 1.32 2014/07/20 00:37:41 rmind Exp $");
 
 #include <net/pfil.h>
 #include <net/if.h>
-#include <net/if_ether.h>
 
 #include <netinet/in_systm.h>
 #include <netinet/in.h>
