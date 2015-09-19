@@ -40,7 +40,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_ext_log.c,v 1.8 2014/07/20 00:37:41 rmind Exp $"
 #include <sys/module.h>
 
 #include <sys/conf.h>
-#include <sys/kmem.h>
+#include <sys/malloc.h>
 #include <sys/mbuf.h>
 #include <sys/lock.h>
 #include <sys/mutex.h>
@@ -67,7 +67,7 @@ npf_log_ctor(npf_rproc_t *rp, prop_dictionary_t params)
 {
 	npf_ext_log_t *meta;
 
-	meta = kmem_zalloc(sizeof(npf_ext_log_t), KM_SLEEP);
+	meta = malloc(sizeof(npf_ext_log_t), M_NPF, M_WAITOK | M_ZERO);
 	prop_dictionary_get_uint32(params, "log-interface", &meta->if_idx);
 	npf_rproc_assign(rp, meta);
 	return 0;
@@ -76,7 +76,7 @@ npf_log_ctor(npf_rproc_t *rp, prop_dictionary_t params)
 static void
 npf_log_dtor(npf_rproc_t *rp, void *meta)
 {
-	kmem_free(meta, sizeof(npf_ext_log_t));
+	free(meta);
 }
 
 static bool

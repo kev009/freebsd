@@ -39,8 +39,8 @@ __KERNEL_RCSID(0, "$NetBSD");
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/kmem.h>
 #include <sys/lock.h>
+#include <sys/malloc.h>
 #include <sys/mutex.h>
 #include <sys/module.h>
 #include <sys/refcount.h>
@@ -135,14 +135,14 @@ npf_ext_register(const char *name, const npf_ext_ops_t *ops)
 {
 	npf_ext_t *ext;
 
-	ext = kmem_zalloc(sizeof(npf_ext_t), KM_SLEEP);
+	ext = malloc(sizeof(npf_ext_t), M_NPF, M_WAITOK | M_ZERO);
 	strlcpy(ext->ext_callname, name, EXT_NAME_LEN);
 	ext->ext_ops = ops;
 
 	mutex_enter(&ext_lock);
 	if (npf_ext_lookup(name, false)) {
 		mutex_exit(&ext_lock);
-		kmem_free(ext, sizeof(npf_ext_t));
+		free(ext);
 		return NULL;
 	}
 	LIST_INSERT_HEAD(&ext_list, ext, ext_entry);
@@ -172,7 +172,7 @@ npf_ext_unregister(void *extid)
 	LIST_REMOVE(ext, ext_entry);
 	mutex_exit(&ext_lock);
 
-	kmem_free(ext, sizeof(npf_ext_t));
+	free(ext);
 	return 0;
 }
 
@@ -221,7 +221,7 @@ npf_rprocset_create(void)
 {
 	npf_rprocset_t *rpset;
 
-	rpset = kmem_zalloc(sizeof(npf_rprocset_t), KM_SLEEP);
+	rpset = malloc(sizeof(npf_rprocset_t), M_NPF, M_WAITOK | M_ZERO);
 	LIST_INIT(&rpset->rps_list);
 	return rpset;
 }
@@ -235,7 +235,7 @@ npf_rprocset_destroy(npf_rprocset_t *rpset)
 		LIST_REMOVE(rp, rp_entry);
 		npf_rproc_release(rp);
 	}
-	kmem_free(rpset, sizeof(npf_rprocset_t));
+	free(rpset);
 }
 
 /*

@@ -36,8 +36,8 @@ __KERNEL_RCSID(0, "$NetBSD: npf_ext_rndblock.c,v 1.5 2014/07/20 00:37:41 rmind E
 
 #include <sys/types.h>
 #include <sys/atomic.h>
+#include <sys/malloc.h>
 #include <sys/module.h>
-#include <sys/kmem.h>
 
 #include "npf.h"
 
@@ -74,7 +74,7 @@ npf_ext_rndblock_ctor(npf_rproc_t *rp, prop_dictionary_t params)
 	 * Allocate and a associate a structure for the parameter
 	 * and our meta-data.
 	 */
-	meta = kmem_zalloc(sizeof(npf_ext_rndblock_t), KM_SLEEP);
+	meta = malloc(sizeof(npf_ext_rndblock_t), M_NPF, M_WAITOK | M_ZERO);
 	prop_dictionary_get_uint32(params, "mod", &meta->mod);
 	prop_dictionary_get_uint32(params, "percentage", &meta->percentage);
 	npf_rproc_assign(rp, meta);
@@ -89,7 +89,7 @@ static void
 npf_ext_rndblock_dtor(npf_rproc_t *rp, void *meta)
 {
 	/* Free our meta-data, associated with the procedure. */
-	kmem_free(meta, sizeof(npf_ext_rndblock_t));
+	free(meta);
 }
 
 /*

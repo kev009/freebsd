@@ -30,8 +30,8 @@
 __KERNEL_RCSID(0, "$NetBSD: npf_ext_normalize.c,v 1.3 2014/07/20 00:37:41 rmind Exp $");
 
 #include <sys/types.h>
+#include <sys/malloc.h>
 #include <sys/module.h>
-#include <sys/kmem.h>
 
 #include <net/if.h>
 #include <netinet/in_systm.h>
@@ -70,7 +70,7 @@ npf_normalize_ctor(npf_rproc_t *rp, prop_dictionary_t params)
 	npf_normalize_t *np;
 
 	/* Create a structure for normalisation parameters. */
-	np = kmem_zalloc(sizeof(npf_normalize_t), KM_SLEEP);
+	np = malloc(sizeof(npf_normalize_t), M_NPF, M_WAITOK | M_ZERO);
 
 	/* IP ID randomisation and IP_DF flag cleansing. */
 	prop_dictionary_get_bool(params, "random-id", &np->n_random_id);
@@ -92,7 +92,7 @@ static void
 npf_normalize_dtor(npf_rproc_t *rp, void *params)
 {
 	/* Free our meta-data, associated with the procedure. */
-	kmem_free(params, sizeof(npf_normalize_t));
+	free(params);
 }
 
 /*

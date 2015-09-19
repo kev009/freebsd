@@ -56,7 +56,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_if.c,v 1.5 2015/07/12 23:51:53 rmind Exp $");
 
 #include <sys/param.h>
 #include <sys/types.h>
-#include <sys/kmem.h>
 
 #include <net/if.h>
 

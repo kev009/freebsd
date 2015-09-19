@@ -93,6 +93,8 @@ typedef struct npf_tableset	npf_tableset_t;
  * DEFINITIONS.
  */
 
+MALLOC_DECLARE(M_NPF);
+
 typedef void (*npf_workfunc_t)(void);
 
 /*

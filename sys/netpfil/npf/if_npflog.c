@@ -40,7 +40,7 @@ __KERNEL_RCSID(0, "$NetBSD: if_npflog.c,v 1.3 2013/03/13 13:15:47 christos Exp $
 #include <sys/module.h>
 
 #include <sys/conf.h>
-#include <sys/kmem.h>
+#include <sys/malloc.h>
 #include <sys/mbuf.h>
 #include <sys/lock.h>
 #include <sys/mutex.h>
@@ -111,7 +111,7 @@ npflog_clone_create(struct if_clone *ifc, int unit)
 	npflog_softc_t *sc;
 	ifnet_t *ifp;
 
-	sc = kmem_zalloc(sizeof(npflog_softc_t), KM_SLEEP);
+	sc = malloc(sizeof(npflog_softc_t), M_NPF, M_WAITOK | M_ZERO);
 	mutex_init(&sc->sc_lock, MUTEX_DEFAULT, IPL_SOFTNET);
 
 	ifp = &sc->sc_if;
@@ -144,7 +144,7 @@ npflog_clone_destroy(ifnet_t *ifp)
 	KERNEL_UNLOCK_ONE(NULL);
 
 	mutex_destroy(&sc->sc_lock);
-	kmem_free(sc, sizeof(npflog_softc_t));
+	free(sc);
 	return 0;
 }
 

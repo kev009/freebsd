@@ -77,8 +77,8 @@ __KERNEL_RCSID(0, "$NetBSD: npf_nat.c,v 1.39 2014/12/30 19:11:44 christos Exp $"
 #include <sys/types.h>
 
 #include <sys/condvar.h>
-#include <sys/kmem.h>
 #include <sys/lock.h>
+#include <sys/malloc.h>
 #include <sys/mutex.h>
 #include <sys/pool.h>
 #include <sys/proc.h>
@@ -196,7 +196,7 @@ npf_nat_newpolicy(prop_dictionary_t natdict, npf_ruleset_t *rset)
 	prop_object_t obj;
 	npf_portmap_t *pm;
 
-	np = kmem_zalloc(sizeof(npf_natpolicy_t), KM_SLEEP);
+	np = malloc(sizeof(npf_natpolicy_t), M_NPF, M_WAITOK | M_ZERO);
 
 	/* The translation type, flags and policy ID. */
 	prop_dictionary_get_int32(natdict, "type", &np->n_type);
@@ -245,7 +245,7 @@ npf_nat_newpolicy(prop_dictionary_t natdict, npf_ruleset_t *rset)
 	 */
 	if (!npf_ruleset_sharepm(rset, np)) {
 		/* Allocate a new port map for the NAT policy. */
-		pm = kmem_zalloc(PORTMAP_MEM_SIZE, KM_SLEEP);
+		pm = malloc(PORTMAP_MEM_SIZE, M_NPF, M_WAITOK | M_ZERO);
 		refcount_init(&pm->p_refcnt, 1);
 		KASSERT((uintptr_t)pm->p_bitmap == (uintptr_t)pm + sizeof(*pm));
 		np->n_portmap = pm;
@@ -256,7 +256,7 @@ npf_nat_newpolicy(prop_dictionary_t natdict, npf_ruleset_t *rset)
 	return np;
 err:
 	mutex_destroy(&np->n_lock);
-	kmem_free(np, sizeof(npf_natpolicy_t));
+	free(np);
 	return NULL;
 }
 
@@ -319,10 +319,10 @@ npf_nat_freepolicy(npf_natpolicy_t *np)
 	/* Destroy the port map, on last reference. */
 	if (pm && refcount_release(&pm->p_refcnt) == 0) {
 		KASSERT((np->n_flags & NPF_NAT_PORTMAP) != 0);
-		kmem_free(pm, PORTMAP_MEM_SIZE);
+		free(pm);
 	}
 	mutex_destroy(&np->n_lock);
-	kmem_free(np, sizeof(npf_natpolicy_t));
+	free(np);
 }
 
 void
@@ -385,7 +385,7 @@ npf_nat_sharepm(npf_natpolicy_t *np, npf_natpolicy_t *mnp)
 	 * and destroy the port map if it was the last.
 	 */
 	if (mpm && refcount_release(&mpm->p_refcnt) == 0) {
-		kmem_free(mpm, PORTMAP_MEM_SIZE);
+		free(mpm);
 	}
 
 	/* Share the port map. */

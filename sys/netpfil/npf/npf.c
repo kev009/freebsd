@@ -41,8 +41,8 @@ __KERNEL_RCSID(0, "$NetBSD: npf.c,v 1.23 2015/08/20 14:40:19 christos Exp $");
 
 #include <sys/conf.h>
 #include <sys/kauth.h>
-#include <sys/kmem.h>
 #include <sys/lwp.h>
+#include <sys/malloc.h>
 #include <sys/module.h>
 #include <sys/percpu.h>
 #include <sys/rwlock.h>
@@ -95,6 +95,7 @@ npf_init(void)
 #endif
 	int error = 0;
 
+	MALLOC_DECLARE(M_NPF, "npf", "npf malloc");
 	npf_stats_percpu = percpu_alloc(NPF_STATS_SIZE);
 	npf_sysctl = NULL;
 
@@ -300,9 +301,9 @@ npfctl_stats(void *data)
 	uint64_t *fullst, *uptr = *(uint64_t **)data;
 	int error;
 
-	fullst = kmem_zalloc(NPF_STATS_SIZE, KM_SLEEP);
+	fullst = malloc(NPF_STATS_SIZE, M_NPF, M_WAITOK | M_ZERO);
 	percpu_foreach(npf_stats_percpu, npf_stats_collect, fullst);
 	error = copyout(fullst, uptr, NPF_STATS_SIZE);
-	kmem_free(fullst, NPF_STATS_SIZE);
+	free(fullst, NPF_STATS_SIZE);
 	return error;
 }

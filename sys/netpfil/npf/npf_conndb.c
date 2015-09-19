@@ -40,7 +40,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conndb.c,v 1.2 2014/07/23 01:25:34 rmind Exp $")
 #include <sys/types.h>
 
 #include <sys/hash.h>
-#include <sys/kmem.h>
+#include <sys/malloc.h>
 #include <sys/refcount.h>
 
 #define __NPF_CONN_PRIVATE
@@ -109,7 +109,7 @@ npf_conndb_create(void)
 	size_t len = offsetof(npf_conndb_t, cd_hashtbl[CONNDB_HASH_BUCKETS]);
 	npf_conndb_t *cd;
 
-	cd = kmem_zalloc(len, KM_SLEEP);
+	cd = malloc(len, K_NPF, M_WAITOK | M_ZERO);
 	for (u_int i = 0; i < CONNDB_HASH_BUCKETS; i++) {
 		npf_hashbucket_t *hb = &cd->cd_hashtbl[i];
 
@@ -137,7 +137,7 @@ npf_conndb_destroy(npf_conndb_t *cd)
 		KASSERT(!rb_tree_iterate(&hb->hb_tree, NULL, RB_DIR_LEFT));
 		rw_destroy(&hb->hb_lock);
 	}
-	kmem_free(cd, len);
+	free(cd);
 }
 
 /*

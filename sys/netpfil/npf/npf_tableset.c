@@ -48,7 +48,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_tableset.c,v 1.22 2014/08/11 01:54:12 rmind Exp 
 
 #include <sys/hash.h>
 #include <sys/cdbr.h>
-#include <sys/kmem.h>
 #include <sys/malloc.h>
 #include <sys/pool.h>
 #include <sys/queue.h>
@@ -135,7 +134,7 @@ npf_tableset_sysfini(void)
 npf_tableset_t *
 npf_tableset_create(u_int nitems)
 {
-	npf_tableset_t *ts = kmem_zalloc(NPF_TABLESET_SIZE(nitems), KM_SLEEP);
+	npf_tableset_t *ts = malloc(NPF_TABLESET_SIZE(nitems), M_NPF, M_WAITOK | M_ZERO);
 	ts->ts_nitems = nitems;
 	return ts;
 }
@@ -154,7 +153,7 @@ npf_tableset_destroy(npf_tableset_t *ts)
 			npf_table_destroy(t);
 		}
 	}
-	kmem_free(ts, NPF_TABLESET_SIZE(ts->ts_nitems));
+	free(ts);
 }
 
 /*
@@ -339,7 +338,7 @@ npf_table_create(const char *name, u_int tid, int type,
 {
 	npf_table_t *t;
 
-	t = kmem_zalloc(sizeof(npf_table_t), KM_SLEEP);
+	t = malloc(sizeof(npf_table_t), M_NPF, M_WAITOK | M_ZERO);
 	strlcpy(t->t_name, name, NPF_TABLE_MAXNAMELEN);
 
 	switch (type) {
@@ -356,7 +355,7 @@ npf_table_create(const char *name, u_int tid, int type,
 	case NPF_TABLE_HASH:
 		t->t_hashl = hashinit(1024, HASH_LIST, true, &t->t_hashmask);
 		if (t->t_hashl == NULL) {
-			kmem_free(t, sizeof(npf_table_t));
+			free(t);
 			return NULL;
 		}
 		break;
@@ -365,7 +364,7 @@ npf_table_create(const char *name, u_int tid, int type,
 		t->t_bsize = size;
 		t->t_cdb = cdbr_open_mem(blob, size, CDBR_DEFAULT, NULL, NULL);
 		if (t->t_cdb == NULL) {
-			kmem_free(t, sizeof(npf_table_t));
+			free(t);
 			free(blob, M_TEMP);
 			return NULL;
 		}
@@ -406,7 +405,7 @@ npf_table_destroy(npf_table_t *t)
 		KASSERT(false);
 	}
 	rw_destroy(&t->t_lock);
-	kmem_free(t, sizeof(npf_table_t));
+	free(t);
 }
 
 /*

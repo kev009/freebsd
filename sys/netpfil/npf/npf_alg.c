@@ -39,7 +39,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf_alg.c,v 1.15 2014/08/11 23:48:01 rmind Exp $");
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/kmem.h>
 #include <sys/pserialize.h>
 #include <sys/lock.h>
 #include <sys/mutex.h>

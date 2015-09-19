@@ -39,8 +39,8 @@ __KERNEL_RCSID(0, "$NetBSD: npf_ruleset.c,v 1.42 2015/03/20 23:36:28 rmind Exp $
 #include <sys/param.h>
 #include <sys/types.h>
 
-#include <sys/kmem.h>
 #include <sys/queue.h>
+#include <sys/malloc.h>
 #include <sys/mbuf.h>
 #include <sys/types.h>
 
@@ -140,7 +140,7 @@ npf_ruleset_create(size_t slots)
 	size_t len = offsetof(npf_ruleset_t, rs_rules[slots]);
 	npf_ruleset_t *rlset;
 
-	rlset = kmem_zalloc(len, KM_SLEEP);
+	rlset = malloc(len, M_NPF, M_WAITOK | M_ZERO);
 	LIST_INIT(&rlset->rs_dynamic);
 	LIST_INIT(&rlset->rs_all);
 	LIST_INIT(&rlset->rs_gc);
@@ -173,7 +173,7 @@ npf_ruleset_destroy(npf_ruleset_t *rlset)
 	}
 	KASSERT(LIST_EMPTY(&rlset->rs_dynamic));
 	KASSERT(LIST_EMPTY(&rlset->rs_gc));
-	kmem_free(rlset, len);
+	free(rlset);
 }
 
 /*
@@ -650,7 +650,7 @@ npf_rule_alloc(prop_dictionary_t rldict)
 	prop_data_t d;
 
 	/* Allocate a rule structure. */
-	rl = kmem_zalloc(sizeof(npf_rule_t), KM_SLEEP);
+	rl = malloc(sizeof(npf_rule_t), M_NPF, M_WAITOK | M_ZERO);
 	rl->r_natp = NULL;
 
 	/* Name (optional) */
@@ -675,7 +675,7 @@ npf_rule_alloc(prop_dictionary_t rldict)
 	/* Interface name; register and get the npf-if-id. */
 	if (prop_dictionary_get_cstring_nocopy(rldict, "ifname", &rname)) {
 		if ((rl->r_ifid = npf_ifmap_register(rname)) == 0) {
-			kmem_free(rl, sizeof(npf_rule_t));
+			free(rl);
 			return NULL;
 		}
 	} else {
@@ -689,7 +689,7 @@ npf_rule_alloc(prop_dictionary_t rldict)
 	if (key) {
 		size_t len = prop_data_size(obj);
 		if (len > NPF_RULE_MAXKEYLEN) {
-			kmem_free(rl, sizeof(npf_rule_t));
+			free(rl);
 			return NULL;
 		}
 		memcpy(rl->r_key, key, len);
@@ -785,7 +785,7 @@ npf_rule_free(npf_rule_t *rl)
 	}
 	if (rl->r_code) {
 		/* Free byte-code. */
-		kmem_free(rl->r_code, rl->r_clen);
+		free(rl->r_code);
 	}
 	if (rl->r_jcode) {
 		/* Free JIT code. */
@@ -794,7 +794,7 @@ npf_rule_free(npf_rule_t *rl)
 	if (rl->r_info) {
 		prop_object_release(rl->r_info);
 	}
-	kmem_free(rl, sizeof(npf_rule_t));
+	free(rl);
 }
 
 /*
