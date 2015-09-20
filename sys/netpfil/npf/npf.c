@@ -40,7 +40,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf.c,v 1.23 2015/08/20 14:40:19 christos Exp $");
 #include <sys/types.h>
 
 #include <sys/conf.h>
-#include <sys/kauth.h>
 #include <sys/lwp.h>
 #include <sys/malloc.h>
 #include <sys/module.h>
@@ -186,10 +185,12 @@ npf_dev_open(dev_t dev, int flag, int mode, lwp_t *l)
 {
 
 	/* Available only for super-user. */
+	/* XXXnetbsd
 	if (kauth_authorize_network(l->l_cred, KAUTH_NETWORK_FIREWALL,
 	    KAUTH_REQ_NETWORK_FIREWALL_FW, NULL, NULL, NULL)) {
 		return EPERM;
 	}
+	*/
 	return 0;
 }
 
@@ -206,10 +207,12 @@ npf_dev_ioctl(dev_t dev, u_long cmd, void *data, int flag, lwp_t *l)
 	int error;
 
 	/* Available only for super-user. */
+	/* XXXnetbsd
 	if (kauth_authorize_network(l->l_cred, KAUTH_NETWORK_FIREWALL,
 	    KAUTH_REQ_NETWORK_FIREWALL_FW, NULL, NULL, NULL)) {
 		return EPERM;
 	}
+	*/
 
 	switch (cmd) {
 	case IOC_NPF_TABLE:
