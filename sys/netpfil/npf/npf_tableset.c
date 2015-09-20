@@ -49,12 +49,12 @@ __KERNEL_RCSID(0, "$NetBSD: npf_tableset.c,v 1.22 2014/08/11 01:54:12 rmind Exp 
 #include <sys/hash.h>
 #include <sys/cdbr.h>
 #include <sys/malloc.h>
-#include <sys/pool.h>
 #include <sys/queue.h>
 #include <sys/refcount.h>
 #include <sys/rwlock.h>
 #include <sys/systm.h>
 #include <sys/types.h>
+#include <vm/uma.h>
 
 #include "npf_impl.h"
 
@@ -113,7 +113,7 @@ struct npf_tableset {
 
 #define	NPF_ADDRLEN2TREE(alen)	((alen) >> 4)
 
-static pool_cache_t		tblent_cache	__read_mostly;
+static uma_zone_t		tblent_cache	__read_mostly;
 
 /*
  * npf_table_sysinit: initialise tableset structures.
@@ -121,14 +121,14 @@ static pool_cache_t		tblent_cache	__read_mostly;
 void
 npf_tableset_sysinit(void)
 {
-	tblent_cache = pool_cache_init(sizeof(npf_tblent_t), coherency_unit,
-	    0, 0, "npftblpl", NULL, IPL_NONE, NULL, NULL, NULL);
+	tblent_cache = uma_zcreate("npftblpl", sizeof(npg_tblent_t), NULL,
+	    NULL, NULL, NULL, UMA_ALIGN_PTR, NULL);
 }
 
 void
 npf_tableset_sysfini(void)
 {
-	pool_cache_destroy(tblent_cache);
+	uma_zdestroy(tblent_cache);
 }
 
 npf_tableset_t *
@@ -313,7 +313,7 @@ table_hash_destroy(npf_table_t *t)
 
 		while ((ent = LIST_FIRST(&t->t_hashl[n])) != NULL) {
 			LIST_REMOVE(ent, te_hashent);
-			pool_cache_put(tblent_cache, ent);
+			uma_zfree(tblent_cache, ent);
 		}
 	}
 }
@@ -325,7 +325,7 @@ table_tree_destroy(pt_tree_t *tree)
 
 	while ((ent = ptree_iterate(tree, NULL, PT_ASCENDING)) != NULL) {
 		ptree_remove_node(tree, ent);
-		pool_cache_put(tblent_cache, ent);
+		uma_zfree(tblent_cache, ent);
 	}
 }
 
@@ -473,7 +473,7 @@ npf_table_insert(npf_table_t *t, const int alen,
 	if (error) {
 		return error;
 	}
-	ent = pool_cache_get(tblent_cache, PR_WAITOK);
+	ent = uma_zalloc(tblent_cache, M_WAITOK);
 	memcpy(&ent->te_addr, addr, alen);
 	ent->te_alen = alen;
 
@@ -527,7 +527,7 @@ npf_table_insert(npf_table_t *t, const int alen,
 	rw_exit(&t->t_lock);
 
 	if (error) {
-		pool_cache_put(tblent_cache, ent);
+		uma_zfree(tblent_cache, ent);
 	}
 	return error;
 }
@@ -580,7 +580,7 @@ npf_table_remove(npf_table_t *t, const int alen,
 	rw_exit(&t->t_lock);
 
 	if (ent) {
-		pool_cache_put(tblent_cache, ent);
+		uma_zfree(tblent_cache, ent);
 	}
 	return error;
 }

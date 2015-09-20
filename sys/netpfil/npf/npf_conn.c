@@ -112,10 +112,10 @@ __KERNEL_RCSID(0, "$NetBSD: npf_conn.c,v 1.16 2015/02/05 22:04:03 rmind Exp $");
 #include <sys/lock.h>
 #include <sys/mutex.h>
 #include <net/pfil.h>
-#include <sys/pool.h>
 #include <sys/queue.h>
 #include <sys/refcount.h>
 #include <sys/systm.h>
+#include <vm/uma.h>
 
 #define __NPF_CONN_PRIVATE
 #include "npf_conn.h"
@@ -138,7 +138,7 @@ static volatile int	conn_tracking	__cacheline_aligned;
 
 /* Connection tracking database, connection cache and the lock. */
 static npf_conndb_t *	conn_db		__read_mostly;
-static pool_cache_t	conn_cache	__read_mostly;
+static uma_zone_t	conn_cache	__read_mostly;
 static kmutex_t		conn_lock	__cacheline_aligned;
 
 static void	npf_conn_worker(void);
@@ -151,8 +151,8 @@ static void	npf_conn_destroy(npf_conn_t *);
 void
 npf_conn_sysinit(void)
 {
-	conn_cache = pool_cache_init(sizeof(npf_conn_t), coherency_unit,
-	    0, 0, "npfconpl", NULL, IPL_NET, NULL, NULL, NULL);
+	conn_cache = uma_zcreate("npfconpl", sizeof(npf_conn_t), NULL, NULL,
+	    NULL, NULL, UMA_PTR_ALIGN, NULL);
 	mutex_init(&conn_lock, MUTEX_DEFAULT, IPL_NONE);
 	conn_tracking = CONN_TRACKING_OFF;
 	conn_db = npf_conndb_create();
@@ -168,7 +168,7 @@ npf_conn_sysfini(void)
 	npf_worker_unregister(npf_conn_worker);
 
 	npf_conndb_destroy(conn_db);
-	pool_cache_destroy(conn_cache);
+	uma_zdestroy(conn_cache);
 	mutex_destroy(&conn_lock);
 }
 
@@ -210,7 +210,9 @@ npf_conn_load(npf_conndb_t *ndb, bool track)
 		 */
 		npf_conn_gc(odb, true, false);
 		npf_conndb_destroy(odb);
+		/* XXXfreebsd how to do this?
 		pool_cache_invalidate(conn_cache);
+		*/
 	}
 }
 
@@ -461,7 +463,7 @@ npf_conn_establish(npf_cache_t *npc, int di, bool per_if)
 	}
 
 	/* Allocate and initialise the new connection. */
-	con = pool_cache_get(conn_cache, PR_NOWAIT);
+	con = uma_zalloc(conn_cache, M_NOWAIT);
 	if (__predict_false(!con)) {
 		return NULL;
 	}
@@ -561,7 +563,7 @@ npf_conn_destroy(npf_conn_t *con)
 	mutex_destroy(&con->c_lock);
 
 	/* Free the structure, increase the counter. */
-	pool_cache_put(conn_cache, con);
+	uma_zfree(conn_cache, con);
 	npf_stats_inc(NPF_STAT_CONN_DESTROY);
 	NPF_PRINTF(("NPF: conn %p destroyed\n", con));
 }
@@ -922,7 +924,7 @@ npf_conn_import(npf_conndb_t *cd, prop_dictionary_t cdict,
 	const void *d;
 
 	/* Allocate a connection and initialise it (clear first). */
-	con = pool_cache_get(conn_cache, PR_WAITOK);
+	con = uma_zalloc(conn_cache, M_WAITOK);
 	memset(con, 0, sizeof(npf_conn_t));
 	mutex_init(&con->c_lock, MUTEX_DEFAULT, IPL_SOFTNET);
 	npf_stats_inc(NPF_STAT_CONN_CREATE);

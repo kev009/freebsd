@@ -80,9 +80,10 @@ __KERNEL_RCSID(0, "$NetBSD: npf_nat.c,v 1.39 2014/12/30 19:11:44 christos Exp $"
 #include <sys/lock.h>
 #include <sys/malloc.h>
 #include <sys/mutex.h>
-#include <sys/pool.h>
 #include <sys/proc.h>
 #include <sys/refcount.h>
+
+#include <vm/uma.h>
 
 #include <net/pfil.h>
 #include <netinet/in.h>
@@ -163,7 +164,7 @@ struct npf_nat {
 	npf_conn_t *		nt_conn;
 };
 
-static pool_cache_t		nat_cache	__read_mostly;
+static uma_zone_t		nat_cache	__read_mostly;
 
 /*
  * npf_nat_sys{init,fini}: initialise/destroy NAT subsystem structures.
@@ -172,8 +173,8 @@ static pool_cache_t		nat_cache	__read_mostly;
 void
 npf_nat_sysinit(void)
 {
-	nat_cache = pool_cache_init(sizeof(npf_nat_t), coherency_unit,
-	    0, 0, "npfnatpl", NULL, IPL_NET, NULL, NULL, NULL);
+	nat_cache = uma_zcreate("npfnatpl", sizeof(npf_nat_t), NULL, NULL,
+	    NULL, NULL, UMA_ALIGN_PTR, NULL);
 	KASSERT(nat_cache != NULL);
 }
 
@@ -181,7 +182,7 @@ void
 npf_nat_sysfini(void)
 {
 	/* All NAT policies should already be destroyed. */
-	pool_cache_destroy(nat_cache);
+	uma_zdestroy(nat_cache);
 }
 
 /*
@@ -556,7 +557,7 @@ npf_nat_create(npf_cache_t *npc, npf_natpolicy_t *np, npf_conn_t *con)
 	KASSERT(npf_iscached(npc, NPC_LAYER4));
 
 	/* Construct a new NAT entry and associate it with the connection. */
-	nt = pool_cache_get(nat_cache, PR_NOWAIT);
+	nt = uma_zalloc(nat_cache, M_NOWAIT);
 	if (nt == NULL){
 		return NULL;
 	}
@@ -833,7 +834,7 @@ npf_nat_destroy(npf_nat_t *nt)
 	refcount_release(&np->n_refcnt);
 	mutex_exit(&np->n_lock);
 
-	pool_cache_put(nat_cache, nt);
+	uma_zfree(nat_cache, nt);
 	npf_stats_inc(NPF_STAT_NAT_DESTROY);
 }
 
@@ -872,13 +873,13 @@ npf_nat_import(prop_dictionary_t natdict, npf_ruleset_t *natlist,
 	if ((np = npf_ruleset_findnat(natlist, np_id)) == NULL) {
 		return NULL;
 	}
-	nt = pool_cache_get(nat_cache, PR_WAITOK);
+	nt = uma_zalloc(nat_cache, M_WAITOK);
 	memset(nt, 0, sizeof(npf_nat_t));
 
 	prop_object_t obj = prop_dictionary_get(natdict, "oaddr");
 	if ((d = prop_data_data_nocopy(obj)) == NULL ||
 	    prop_data_size(obj) != sizeof(npf_addr_t)) {
-		pool_cache_put(nat_cache, nt);
+		uma_zfree(nat_cache, nt);
 		return NULL;
 	}
 	memcpy(&nt->nt_oaddr, d, sizeof(npf_addr_t));
@@ -888,7 +889,7 @@ npf_nat_import(prop_dictionary_t natdict, npf_ruleset_t *natlist,
 	/* Take a specific port from port-map. */
 	if ((np->n_flags & NPF_NAT_PORTMAP) != 0 && nt->nt_tport &
 	    !npf_nat_takeport(np, nt->nt_tport)) {
-		pool_cache_put(nat_cache, nt);
+		uma_zfree(nat_cache, nt);
 		return NULL;
 	}
 	npf_stats_inc(NPF_STAT_NAT_CREATE);
