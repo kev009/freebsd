@@ -40,7 +40,6 @@ __KERNEL_RCSID(0, "$NetBSD: npf.c,v 1.23 2015/08/20 14:40:19 christos Exp $");
 #include <sys/types.h>
 
 #include <sys/conf.h>
-#include <sys/lwp.h>
 #include <sys/malloc.h>
 #include <sys/module.h>
 #include <sys/percpu.h>
@@ -60,10 +59,10 @@ __KERNEL_RCSID(0, "$NetBSD: npf.c,v 1.23 2015/08/20 14:40:19 christos Exp $");
 MODULE(MODULE_CLASS_DRIVER, npf, NULL);
 
 static int	npf_fini(void);
-static int	npf_dev_open(dev_t, int, int, lwp_t *);
-static int	npf_dev_close(dev_t, int, int, lwp_t *);
-static int	npf_dev_ioctl(dev_t, u_long, void *, int, lwp_t *);
-static int	npf_dev_poll(dev_t, int, lwp_t *);
+static int	npf_dev_open(dev_t, int, int);
+static int	npf_dev_close(dev_t, int, int);
+static int	npf_dev_ioctl(dev_t, u_long, void *, int);
+static int	npf_dev_poll(dev_t, int);
 static int	npf_dev_read(dev_t, struct uio *, int);
 
 static int	npfctl_stats(void *);
@@ -181,7 +180,7 @@ npfattach(int nunits)
 }
 
 static int
-npf_dev_open(dev_t dev, int flag, int mode, lwp_t *l)
+npf_dev_open(dev_t dev, int flag, int mode)
 {
 
 	/* Available only for super-user. */
@@ -195,14 +194,14 @@ npf_dev_open(dev_t dev, int flag, int mode, lwp_t *l)
 }
 
 static int
-npf_dev_close(dev_t dev, int flag, int mode, lwp_t *l)
+npf_dev_close(dev_t dev, int flag, int mode)
 {
 
 	return 0;
 }
 
 static int
-npf_dev_ioctl(dev_t dev, u_long cmd, void *data, int flag, lwp_t *l)
+npf_dev_ioctl(dev_t dev, u_long cmd, void *data, int flag)
 {
 	int error;
 
@@ -245,7 +244,7 @@ npf_dev_ioctl(dev_t dev, u_long cmd, void *data, int flag, lwp_t *l)
 }
 
 static int
-npf_dev_poll(dev_t dev, int events, lwp_t *l)
+npf_dev_poll(dev_t dev, int events)
 {
 
 	return ENOTSUP;
