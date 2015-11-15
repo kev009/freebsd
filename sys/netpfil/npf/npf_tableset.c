@@ -256,7 +256,7 @@ npf_tableset_reload(npf_tableset_t *nts, npf_tableset_t *ots)
 }
 
 int
-npf_tableset_export(const npf_tableset_t *ts, prop_array_t tables)
+npf_tableset_export(const npf_tableset_t *ts, nvlist_t *tables)
 {
 	const npf_table_t *t;
 
@@ -266,13 +266,13 @@ npf_tableset_export(const npf_tableset_t *ts, prop_array_t tables)
 		if ((t = ts->ts_map[tid]) == NULL) {
 			continue;
 		}
-		prop_dictionary_t tdict = prop_dictionary_create();
-		prop_dictionary_set_cstring(tdict, "name", t->t_name);
-		prop_dictionary_set_uint32(tdict, "type", t->t_type);
-		prop_dictionary_set_uint32(tdict, "id", tid);
+		nvlist_t *tdict = nvlist_create();
+		nvlist_add_string(tdict, "name", t->t_name);
+		nvlist_add_number(tdict, "type", t->t_type);
+		nvlist_add_number(tdict, "id", tid);
 
-		prop_array_add(tables, tdict);
-		prop_object_release(tdict);
+		nvlist_move_nvlist(tables, tdict);
+		/* XXXfreebsd assert no nvlist error? */
 	}
 	return 0;
 }

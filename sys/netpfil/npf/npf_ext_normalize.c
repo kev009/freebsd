@@ -65,7 +65,7 @@ typedef struct {
  * with the given parameters.
  */
 static int
-npf_normalize_ctor(npf_rproc_t *rp, prop_dictionary_t params)
+npf_normalize_ctor(npf_rproc_t *rp, nvlist_t *params)
 {
 	npf_normalize_t *np;
 
@@ -73,12 +73,12 @@ npf_normalize_ctor(npf_rproc_t *rp, prop_dictionary_t params)
 	np = malloc(sizeof(npf_normalize_t), M_NPF, M_WAITOK | M_ZERO);
 
 	/* IP ID randomisation and IP_DF flag cleansing. */
-	prop_dictionary_get_bool(params, "random-id", &np->n_random_id);
-	prop_dictionary_get_bool(params, "no-df", &np->n_no_df);
+	np->n_random_id = nvlist_take_bool(params, "random-id");
+	np->n_no_df = nvlist_take_bool(params, "no-df");
 
 	/* Minimum IP TTL and maximum TCP MSS. */
-	prop_dictionary_get_uint32(params, "min-ttl", &np->n_minttl);
-	prop_dictionary_get_uint32(params, "max-mss", &np->n_maxmss);
+	np->n_minttl = nvlist_take_number(params, "min-ttl");
+	np->n_maxmss = nvlist_take_number(params, "max-mss");
 
 	/* Assign the parameters for this rule procedure. */
 	npf_rproc_assign(rp, np);

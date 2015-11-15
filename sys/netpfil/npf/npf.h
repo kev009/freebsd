@@ -40,7 +40,7 @@
 #include <sys/types.h>
 
 #include <sys/ioctl.h>
-#include <prop/proplib.h>
+#include <sys/nv.h>
 
 #include <netinet/in_systm.h>
 #include <netinet/in.h>
@@ -191,7 +191,7 @@ void		npf_rproc_assign(npf_rproc_t *, void *);
 typedef struct {
 	unsigned int	version;
 	void *		ctx;
-	int		(*ctor)(npf_rproc_t *, prop_dictionary_t);
+	int		(*ctor)(npf_rproc_t *, nvlist_t);
 	void		(*dtor)(npf_rproc_t *, void *);
 	bool		(*proc)(npf_cache_t *, void *, int *);
 } npf_ext_ops_t;

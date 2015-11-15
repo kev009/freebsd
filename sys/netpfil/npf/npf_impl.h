@@ -238,7 +238,7 @@ int		npf_tableset_insert(npf_tableset_t *, npf_table_t *);
 npf_table_t *	npf_tableset_getbyname(npf_tableset_t *, const char *);
 npf_table_t *	npf_tableset_getbyid(npf_tableset_t *, u_int);
 void		npf_tableset_reload(npf_tableset_t *, npf_tableset_t *);
-int		npf_tableset_export(const npf_tableset_t *, prop_array_t);
+int		npf_tableset_export(const npf_tableset_t *, nvlist_t);
 
 npf_table_t *	npf_table_create(const char *, u_int, int, void *, size_t);
 void		npf_table_destroy(npf_table_t *);
@@ -260,13 +260,13 @@ void		npf_ruleset_reload(npf_ruleset_t *, npf_ruleset_t *, bool);
 npf_rule_t *	npf_ruleset_sharepm(npf_ruleset_t *, npf_natpolicy_t *);
 npf_natpolicy_t *npf_ruleset_findnat(npf_ruleset_t *, uint64_t);
 void		npf_ruleset_freealg(npf_ruleset_t *, npf_alg_t *);
-int		npf_ruleset_export(const npf_ruleset_t *, prop_array_t);
+int		npf_ruleset_export(const npf_ruleset_t *, nvlist_t);
 
 int		npf_ruleset_add(npf_ruleset_t *, const char *, npf_rule_t *);
 int		npf_ruleset_remove(npf_ruleset_t *, const char *, uint64_t);
 int		npf_ruleset_remkey(npf_ruleset_t *, const char *,
 		    const void *, size_t);
-prop_dictionary_t npf_ruleset_list(npf_ruleset_t *, const char *);
+nvlist_t npf_ruleset_list(npf_ruleset_t *, const char *);
 int		npf_ruleset_flush(npf_ruleset_t *, const char *);
 void		npf_ruleset_gc(npf_ruleset_t *);
 
@@ -275,7 +275,7 @@ npf_rule_t *	npf_ruleset_inspect(npf_cache_t *, const npf_ruleset_t *,
 int		npf_rule_conclude(const npf_rule_t *, int *);
 
 /* Rule interface. */
-npf_rule_t *	npf_rule_alloc(prop_dictionary_t);
+npf_rule_t *	npf_rule_alloc(nvlist_t);
 void		npf_rule_setcode(npf_rule_t *, int, void *, size_t);
 void		npf_rule_setrproc(npf_rule_t *, npf_rproc_t *);
 void		npf_rule_free(npf_rule_t *);
@@ -287,15 +287,15 @@ npf_rproc_t *	npf_rule_getrproc(const npf_rule_t *);
 void		npf_ext_sysinit(void);
 void		npf_ext_sysfini(void);
 int		npf_ext_construct(const char *,
-		    npf_rproc_t *, prop_dictionary_t);
+		    npf_rproc_t *, nvlist_t);
 
 npf_rprocset_t *npf_rprocset_create(void);
 void		npf_rprocset_destroy(npf_rprocset_t *);
 npf_rproc_t *	npf_rprocset_lookup(npf_rprocset_t *, const char *);
 void		npf_rprocset_insert(npf_rprocset_t *, npf_rproc_t *);
-int		npf_rprocset_export(const npf_rprocset_t *, prop_array_t);
+int		npf_rprocset_export(const npf_rprocset_t *, nvlist_t);
 
-npf_rproc_t *	npf_rproc_create(prop_dictionary_t);
+npf_rproc_t *	npf_rproc_create(nvlist_t);
 void		npf_rproc_acquire(npf_rproc_t *);
 void		npf_rproc_release(npf_rproc_t *);
 bool		npf_rproc_run(npf_cache_t *, npf_rproc_t *, int *);
@@ -312,8 +312,8 @@ int		npf_state_tcp_timeout(const npf_state_t *);
 /* NAT. */
 void		npf_nat_sysinit(void);
 void		npf_nat_sysfini(void);
-npf_natpolicy_t *npf_nat_newpolicy(prop_dictionary_t, npf_ruleset_t *);
-int		npf_nat_policyexport(const npf_natpolicy_t *, prop_dictionary_t);
+npf_natpolicy_t *npf_nat_newpolicy(nvlist_t, npf_ruleset_t *);
+int		npf_nat_policyexport(const npf_natpolicy_t *, nvlist_t);
 void		npf_nat_freepolicy(npf_natpolicy_t *);
 bool		npf_nat_cmppolicy(npf_natpolicy_t *, npf_natpolicy_t *);
 bool		npf_nat_sharepm(npf_natpolicy_t *, npf_natpolicy_t *);
@@ -327,8 +327,8 @@ void		npf_nat_getorig(npf_nat_t *, npf_addr_t **, in_port_t *);
 void		npf_nat_gettrans(npf_nat_t *, npf_addr_t **, in_port_t *);
 void		npf_nat_setalg(npf_nat_t *, npf_alg_t *, uintptr_t);
 
-void		npf_nat_export(prop_dictionary_t, npf_nat_t *);
-npf_nat_t *	npf_nat_import(prop_dictionary_t, npf_ruleset_t *,
+void		npf_nat_export(nvlist_t, npf_nat_t *);
+npf_nat_t *	npf_nat_import(nvlist_t, npf_ruleset_t *,
 		    npf_conn_t *);
 
 /* ALG interface. */
@@ -340,7 +340,7 @@ npf_alg_t *	npf_alg_construct(const char *);
 bool		npf_alg_match(npf_cache_t *, npf_nat_t *, int);
 void		npf_alg_exec(npf_cache_t *, npf_nat_t *, bool);
 npf_conn_t *	npf_alg_conn(npf_cache_t *, int);
-prop_array_t	npf_alg_export(void);
+nvlist_t	npf_alg_export(void);
 
 /* Debugging routines. */
 const char *	npf_addr_dump(const npf_addr_t *, int);

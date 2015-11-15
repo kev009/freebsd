@@ -33,7 +33,7 @@
  * NPF device control.
  *
  * Implementation of (re)loading, construction of tables and rules.
- * NPF proplib(9) dictionary consumer.
+ * nv(9) name/value consumer.
  */
 
 #include <sys/cdefs.h>
@@ -44,7 +44,7 @@ __KERNEL_RCSID(0, "$NetBSD: npf_ctl.c,v 1.42 2015/06/08 01:00:43 rmind Exp $");
 #include <sys/malloc.h>
 #include <net/bpf.h>
 
-#include <prop/proplib.h>
+#include <sys/nv.h>
 
 #include "npf_impl.h"
 #include "npf_conn.h"
@@ -810,8 +810,7 @@ out:
 
 /*
  * npfctl_table: add, remove or query entries in the specified table.
- *
- * For maximum performance, interface is avoiding proplib(3)'s overhead.
+ * XXXfreebsd: For maximum performance, interface is avoiding proplib(3)'s overhead.
  */
 int
 npfctl_table(void *data)

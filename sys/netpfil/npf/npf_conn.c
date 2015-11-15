@@ -841,7 +841,7 @@ npf_conn_worker(void)
  * Note: this is expected to be an expensive operation.
  */
 int
-npf_conndb_export(prop_array_t conlist)
+npf_conndb_export(nvlist_t *conlist)
 {
 	npf_conn_t *con, *prev;
 
@@ -858,7 +858,7 @@ npf_conndb_export(prop_array_t conlist)
 	con = npf_conndb_getlist(conn_db);
 	while (con) {
 		npf_conn_t *next = con->c_next;
-		prop_dictionary_t cdict;
+		nvlist_t *cdict;
 
 		if ((cdict = npf_conn_export(con)) != NULL) {
 			prop_array_add(conlist, cdict);
